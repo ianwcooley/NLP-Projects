@@ -93,18 +93,38 @@ def get_soup(url):
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             # print(soup.prettify())
-            print(soup.get_text())
+            # print(soup.get_text())
         else:
             print(f"URL does not exist or returned status code: {response.status_code}")
+            soup = None
     except requests.exceptions.RequestException as e:
         print(f"Failed to reach the URL: {e}")
-    
-
+    return soup
 
 def get_word_info(word, language):
     url = f"https://en.wiktionary.org/wiki/{word}#{language.capitalize()}"
     # check_and_open_url(url)
-    get_soup(url)
+    soup = get_soup(url)
+    if (soup):
+        # Get div that contains heading with language name:
+        start_element = soup.find(id=language.capitalize()).find_parent('div')
+        # get that div's siblings until the div containing a heading with
+        # the next language name is found, or the end of the page is found:        
+        # Initialize a list to hold the desired elements:
+        elements = [start_element]
+        # Loop through the next siblings until the specific div with class="mw-headingheading2" is found
+        for sibling in start_element.find_next_siblings():
+            if sibling.name == 'div' and 'mw-heading2' in sibling.get('class', []):
+                break
+            elements.append(sibling)
+
+        # Print the collected elements
+        with open('test.html', 'w') as file:
+            for element in elements:
+                file.write(element.prettify() + '\n')
+
+
+        
 
 # get_language_from()
 
