@@ -5,6 +5,7 @@ import sys
 import webbrowser
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 # Initialize recognizer for speech recognition
 recognizer = sr.Recognizer()
@@ -69,7 +70,7 @@ def get_word(language):
     of that word. If the user says more than one word, only the first word is
     returned."""
     audio = capture_audio(f"Say word in {language.capitalize()}:")
-    words = convert_audio_to_text(audio, language).split()
+    words = convert_audio_to_text(audio, language).lower().split()
     return words[0]
 
 def check_and_open_url(url):
@@ -102,8 +103,9 @@ def get_soup(url):
     return soup
 
 def get_word_info(word, language):
-    url = f"https://en.wiktionary.org/wiki/{word}#{language.capitalize()}"
-    # check_and_open_url(url)
+    encoded_word = quote(word)
+    url = f"https://en.wiktionary.org/wiki/{encoded_word}#{language.capitalize()}"
+    check_and_open_url(url) # for testing purposes
     soup = get_soup(url)
     if (soup):
         # Get div that contains heading with language name:
@@ -118,9 +120,11 @@ def get_word_info(word, language):
                 break
             elements.append(sibling)
 
+
         # Print the collected elements
         with open('test.html', 'w') as file:
             for element in elements:
+                file.write('ELEMENT\n')
                 file.write(element.prettify() + '\n')
 
 
