@@ -37,7 +37,8 @@ def get_soup(url):
 
 def get_html(word, language):
     """Goes to the wiktionary page for the given word, and writes to test.html
-    only the section of the page's html code that corresponds to the given language"""
+    only the section of the page's html code that corresponds to the given language.
+    Also, returns this section of the page's html as a string."""
     encoded_word = quote(word)
     url = f"https://en.wiktionary.org/wiki/{encoded_word}#{language}"
     check_and_open_url(url) # NOTE: for testing purposes only
@@ -55,6 +56,7 @@ def get_html(word, language):
                 break
             elements.append(sibling)
 
+        combined_html = ''.join(str(element) for element in elements)
 
         # Print the collected elements
         with open('test.html', 'w') as file:
@@ -65,6 +67,8 @@ def get_html(word, language):
                 #         file.write('PART OF SPEECH\n')
                 #         print(element.get_text())
                 file.write(element.prettify() + '\n')
+
+        return combined_html
 
 def get_plain_text(word, language):
     # MediaWiki API endpoint for English Wiktionary
@@ -84,6 +88,8 @@ def get_plain_text(word, language):
     
     # Parse the JSON response
     data = response.json()
+
+    pprint.pp(data)
 
     # Regular expression for part of plain text corresponding to given language
     language_section_pattern = rf"(== {language} ==[\s\S]*?)(?=\n== [^\s=][^=]* ==|\Z)"
@@ -108,3 +114,89 @@ def get_plain_text(word, language):
 def get_word_info(word, language):
     get_html(word, language)
     get_plain_text(word, language)
+
+###############
+#########################
+############
+
+class WordEntry:
+    def __init__(self, word, language):
+        self.word = word
+        self.language = language
+        self.pronunciations = []
+        self.etymologies = []
+        self.definitions = {pos: [] for pos in constants.PARTS_OF_SPEECH}
+
+    def add_pronunciation(self, pronunciation):
+        self.pronunciations.append(pronunciation)
+
+    def add_etymology(self, etymology):
+        self.etymologies.append(etymology)
+
+    def add_definition(self, part_of_speech, definition):
+        if part_of_speech in constants.PARTS_OF_SPEECH:
+            self.definitions[part_of_speech].append(definition)
+
+def parse_word_entry(html_content, word, language):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    word_entry = WordEntry(word, language)
+
+    # Extract pronunciations
+    pronunciation_section = soup.find_all('h3', id=lambda x: x and 'Pronunciation' in x)
+    for section in pronunciation_section:
+        # TODO: vvv There could be more than one pronunciation. Don't just find the first one.
+        pronunciation = section.find_next('span', class_='IPA') 
+        if pronunciation:
+            word_entry.add_pronunciation({
+                    'html': str(pronunciation),
+                    'text': pronunciation.get_text()
+                })
+
+    # Extract etymologies
+    etymology_sections = soup.find_all(['h3', 'h4'], id=lambda x: x and 'Etymology' in x)
+    for etymology in etymology_sections:
+        etymology_text = etymology.find_next('p')
+        if etymology_text:
+            word_entry.add_etymology({
+                    'html': str(etymology_text),
+                    'text': etymology_text.get_text()
+                })
+
+    # Extract definitions for all parts of speech
+    all_headers = soup.find_all(['h2', 'h3', 'h4', 'h5'])
+    current_pos = None
+
+    for header in all_headers:
+        header_text = header.get_text(strip=True)
+
+        # Check if this is a part of speech header
+        if header_text in constants.PARTS_OF_SPEECH:
+            current_pos = header_text
+
+        # If we have a part of speech, look for the definitions under it
+        if current_pos and header.name in ['h2', 'h3', 'h4', 'h5']:
+            definitions_list = header.find_next('ol')
+            if definitions_list:
+                for li in definitions_list.find_all('li'):
+                    definition_text = li.get_text(separator = ' ', strip=True)
+                    word_entry.add_definition(
+                        current_pos, 
+                        {
+                            'html': str(li),
+                            'text': definition_text
+                        })
+
+    return word_entry
+
+# # Example usage:
+# html_content = """<html>...</html>"""  # Your HTML content here
+# word = 'عربي'
+# language = 'Arabic'
+# parsed_entry = parse_word_entry(html_content, word, language)
+
+# # Access the parsed data
+# print("Pronunciations:", parsed_entry.pronunciations)
+# print("Etymologies:", parsed_entry.etymologies)
+# for pos, defs in parsed_entry.definitions.items():
+#     if defs:  # Only print parts of speech with definitions
+#         print(f"Definitions for {pos}:", defs)
