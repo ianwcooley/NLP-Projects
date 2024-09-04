@@ -13,7 +13,7 @@ def main():
         if opened_page == True:
             wants_to_make_flashcard = speech.ask_for_flashcard()
             if wants_to_make_flashcard:
-                flashcard.get_images(word, language)
+                flashcard.get_images(word)
                 pass
             else:
                 opened_page = False
