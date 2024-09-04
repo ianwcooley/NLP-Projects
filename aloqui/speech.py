@@ -13,6 +13,87 @@ from langdetect.lang_detect_exception import LangDetectException
 # Initialize recognizer for speech recognition
 recognizer = sr.Recognizer()
 
+def play_audio(file_path):
+    """Play audio file using afplay on macOS"""
+    os.system(f"afplay '{file_path}'")
+
+def speak(text, lang_code):
+    """Makes and plays an audio clip of the text in the given language"""
+    # Text-to-speech function
+    tts = gTTS(text=text, lang=lang_code, slow=False)
+    tts.save("output.mp3")
+    play_audio("output.mp3")
+
+def is_language(text):
+    return text.lower() in gt.LANGCODES
+
+def is_yes_or_no(text):
+    return text.lower() in ["yes", "no"]
+
+def yes_or_no_error_message(text):
+    return "Say yes or no."
+
+def language_not_supported_message(text):
+    return f"{text} is not a supported language."
+
+def listen_for_input(prompt, lang_code, condition=None, error_message=None):
+    """Prompts the user to say something, and returns
+    what the user said as a string.
+    
+    lang_code sets the language to be listened for
+    condition sets the condition to check the text against
+    error_message returns the message to print if the condition is not met
+    
+    If condition is not met, prompts user again"""
+
+    # with sr.Microphone(sample_rate=48000, chunk_size=512) as source:
+    with sr.Microphone(sample_rate=16000) as source:
+        recognizer.adjust_for_ambient_noise(source, duration=1)
+        print(prompt)
+        print(">>> ", end="", flush=True)
+        speak(prompt, "en")
+        while True:
+            try:
+                # audio = recognizer.listen(source, timeout=3, phrase_time_limit=3)
+                audio = recognizer.listen(source)
+                text = recognizer.recognize_google(audio, language=lang_code)
+                print(text)
+                speak(text, lang_code)
+                if condition == None or condition(text):
+                    return text
+                else:
+                    if (error_message):
+                        print("\n", error_message(text))
+                        speak(error_message(text), "en")
+                    print(prompt)
+                    print(">>> ", end="", flush=True)
+                    speak(prompt, "en")
+            except sr.WaitTimeoutError:
+                print("Timeout: No speech detected within the timeout period.")
+            except sr.UnknownValueError:
+                print("\nSorry, I did not understand.")
+                speak("Sorry, I did not understand.", "en")
+                print(prompt)
+                print(">>> ", end="", flush=True)
+                speak(prompt, "en")
+
+def get_language():
+    language = listen_for_input("Please say a language", "en-US", is_language, language_not_supported_message)
+    return language.capitalize()
+
+def get_word(language):
+    lang_code = gt.LANGCODES[language.lower()]
+    words = listen_for_input("Please say a word", lang_code)
+    word = words.split()[0]
+    return word
+
+def ask_for_flashcard():
+    wants_to_make_flashcard = listen_for_input("Do you want to make a flashcard?", "en",  is_yes_or_no, yes_or_no_error_message)
+    if wants_to_make_flashcard.lower() == "yes":
+        return True
+    else:
+        return False
+
 def capture_audio(audio_request_message):
     """Adjusts for background noise, prints audio_request_message that asks the
     user to speak, then records what the user says."""
@@ -38,26 +119,26 @@ def convert_audio_to_text(audio, language="english"):
         print(f"Could not request results from Google Speech Recognition service; {e}")
         sys.exit()  # TODO: change this to loop back
 
-def get_language(direction):
-    """Asks the user for the language they'd like to translate to or from, and returns
-    that language if it is supported."""
-    audio = capture_audio(f"Say the language you'd like to translate {direction}:")
-    text = convert_audio_to_text(audio)
-    if text.lower() in gt.LANGCODES:
-        language = text.capitalize()
-        print(f"You are translating {direction}: {text}")
-        return language
-    else:
-        print(text + " is not a supported language.")
-        sys.exit()  # TODO: change this to loop back
+# def get_language(direction):
+#     """Asks the user for the language they'd like to translate to or from, and returns
+#     that language if it is supported."""
+#     audio = capture_audio(f"Say the language you'd like to translate {direction}:")
+#     text = convert_audio_to_text(audio)
+#     if text.lower() in gt.LANGCODES:
+#         language = text.capitalize()
+#         print(f"You are translating {direction}: {text}")
+#         return language
+#     else:
+#         print(text + " is not a supported language.")
+#         sys.exit()  # TODO: change this to loop back
 
-def get_word(language):
-    """Asks the user to say a word in the given language, and returns the text
-    of that word. If the user says more than one word, only the first word is
-    returned."""
-    audio = capture_audio(f"Say word in {language}:")
-    words = convert_audio_to_text(audio, language).lower().split()
-    return words[0]
+# def get_word(language):
+#     """Asks the user to say a word in the given language, and returns the text
+#     of that word. If the user says more than one word, only the first word is
+#     returned."""
+#     audio = capture_audio(f"Say word in {language}:")
+#     words = convert_audio_to_text(audio, language).lower().split()
+#     return words[0]
 
 def combine_fragments(text_fragments):
     # List to store the combined fragments

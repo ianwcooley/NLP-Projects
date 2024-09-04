@@ -5,6 +5,7 @@ from urllib.parse import quote
 import re
 import constants
 import pprint
+import speech
 
 # NOTE: This function is not called anywhere.
 def check_and_open_url(url):
@@ -19,6 +20,27 @@ def check_and_open_url(url):
             print(f"URL does not exist or returned status code: {response.status_code}")
     except requests.exceptions.RequestException as e:
         print(f"Failed to reach the URL: {e}")
+
+def open_wikitionary_page(word, language):
+    """Checks to see if wiktionary page exists for word in given language.
+    If so, opens the page and returns True
+    If not, returns False
+    """
+    encoded_word = quote(word) # necessary for languages with difficult alphabets
+    url = f"https://en.wiktionary.org/wiki/{encoded_word}#{language}"
+    try:
+        # Send a HEAD request to check if the URL exists
+        response = requests.head(url, allow_redirects=True)
+        if response.status_code == 200:
+            webbrowser.open(url)
+            return True
+        else:
+            print(f"URL does not exist or returned status code: {response.status_code}")
+            return False
+
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to reach the URL: {e}")
+        return False
 
 def get_soup(url):
     """Checks to see if url exists, and if so, gets the BeautifulSoup of the url.
