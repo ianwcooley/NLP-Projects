@@ -10,10 +10,13 @@ import pprint
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
 from word2number import w2n
+import pyaudio
+import wave
+from google.cloud import speech
 
 # Initialize recognizer for speech recognition
 recognizer = sr.Recognizer()
-recognizer.pause_threshold = 0.5
+# recognizer.pause_threshold = 0.5
 
 
 
@@ -86,7 +89,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
                 speak(prompt, "en")
             except sr.RequestError as e:
                 print(f"Could not request results from Google Cloud Speech service; {e}")
-                # text = recognizer.recognize_google(audio, language=lang_code)
+                
 def get_language():
     language = listen_for_input("Please say a language", "en-US", is_language, language_not_supported_message)
     return language.split()[0].capitalize()
@@ -326,3 +329,133 @@ def say_multilingual_html(html_content):
 
     # Play the final audio (this will depend on your OS)
     os.system("open combined_output.mp3")  # For Windows; use "open combined_output.mp3" for macOS or "xdg-open combined_output.mp3" for Linux
+
+
+###
+### practice
+###
+
+def recognize_yes_no():
+    # Define your microphone as the audio source
+    with sr.Microphone() as source:
+        print("Say 'yes' or 'no'...")
+        recognizer.adjust_for_ambient_noise(source)  # Adjust for ambient noise
+        audio = recognizer.listen(source)  # Listen to the source
+
+    # Define the grammar with limited vocabulary
+    try:
+        # Only recognize "yes" or "no"
+        recognized_word = recognizer.recognize_sphinx(audio, grammar="yes_no.gram")
+        print("You said:", recognized_word)
+    except sr.UnknownValueError:
+        print("Could not understand audio")
+    except sr.RequestError as e:
+            print(f"Sphinx error: {e}")
+
+
+def record_audio(file_path, record_seconds=5):
+    # Set up the microphone
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1024)
+
+    print("Recording...")
+    frames = []
+
+    for _ in range(0, int(16000 / 1024 * record_seconds)):
+        data = stream.read(1024)
+        frames.append(data)
+
+    print("Recording completed.")
+
+    # Save the recorded audio
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    with wave.open(file_path, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(16000)
+        wf.writeframes(b''.join(frames))
+
+def transcribe_audio_with_hints(file_path):
+    client = speech.SpeechClient()
+
+    # Read the audio file
+    with open(file_path, "rb") as audio_file:
+        content = audio_file.read()
+
+    # Configure the audio settings with phrase hints
+    audio = speech.RecognitionAudio(content=content)
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=16000,
+        language_code="en-US",
+        speech_contexts=[speech.SpeechContext(phrases=["yes", "no"])],  # Add your target keywords here
+    )
+
+    # Call the API
+    response = client.recognize(config=config, audio=audio)
+
+    # Process and print the results
+    for result in response.results:
+        print("Transcript: {}".format(result.alternatives[0].transcript))
+
+def record_and_transcribe():
+    # Initialize recognizer and microphone
+    # recognizer = sr.Recognizer()
+    microphone = sr.Microphone(sample_rate=16000)
+
+    # Adjust microphone settings and start recording
+    with microphone as source:
+        print("Adjusting for ambient noise... Please wait.")
+        recognizer.adjust_for_ambient_noise(source)
+        print("Listening... Please speak.")
+
+        # Listen until the user stops speaking
+        audio = recognizer.listen(source)
+
+    print("Recording stopped. Processing...")
+
+    # Convert audio to a format compatible with Google Cloud Speech-to-Text
+    audio_data = audio.get_wav_data()
+
+    # Initialize the Google Cloud Speech Client
+    client = speech.SpeechClient()
+
+    # Configure the audio settings with phrase hints
+    audio_google = speech.RecognitionAudio(content=audio_data)
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=16000,
+        language_code="en-US",
+        speech_contexts=[speech.SpeechContext(phrases=["yes", "no", "okay", "stop"])],  # Add your target keywords here
+    )
+
+    # Call the API
+    response = client.recognize(config=config, audio=audio_google)
+
+    # Process and print the results
+    for result in response.results:
+        print("Transcript: {}".format(result.alternatives[0].transcript))
+
+
+
+def main():
+    # recognize_yes_no()
+    # Record audio and transcribe
+    # record_audio("output.wav")
+    # transcribe_audio_with_hints("output.wav")
+    record_and_transcribe()    
+
+
+if __name__ == "__main__":
+    main()
+# Make sure you create a grammar file `yes_no.gram` with the following content:
+# #JSGF V1.0;
+# grammar yes_no;
+# public <yesno> = yes | no ;
+
+
+# Set up environment variable for credentials
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/path/to/your/service-account-file.json"
