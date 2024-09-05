@@ -13,7 +13,7 @@ def search_duckduckgo_images(keyword):
         type_image=None,
         layout=None,
         license_image=None,
-        max_results=10,
+        max_results=20,
     )
     return results
 

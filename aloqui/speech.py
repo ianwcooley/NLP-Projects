@@ -9,9 +9,13 @@ import string
 import pprint
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
+from word2number import w2n
 
 # Initialize recognizer for speech recognition
 recognizer = sr.Recognizer()
+recognizer.pause_threshold = 0.5
+
+
 
 def play_audio(file_path):
     """Play audio file using afplay on macOS"""
@@ -25,10 +29,10 @@ def speak(text, lang_code):
     play_audio("output.mp3")
 
 def is_language(text):
-    return text.lower() in gt.LANGCODES
+    return text.split()[0].lower() in gt.LANGCODES
 
 def is_yes_or_no(text):
-    return text.lower() in ["yes", "no"]
+    return text.split()[0].lower() in ["yes", "no"]
 
 def yes_or_no_error_message(text):
     return "Say yes or no."
@@ -47,17 +51,21 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
     If condition is not met, prompts user again"""
 
     # with sr.Microphone(sample_rate=48000, chunk_size=512) as source:
-    with sr.Microphone(sample_rate=16000) as source:
+    with sr.Microphone() as source:
         recognizer.adjust_for_ambient_noise(source, duration=1)
+        print(recognizer.energy_threshold)
+        # print and speak prompt
         print(prompt)
         print(">>> ", end="", flush=True)
         speak(prompt, "en")
         while True:
             try:
                 # audio = recognizer.listen(source, timeout=3, phrase_time_limit=3)
+                # listen for user input and discover if reco
                 audio = recognizer.listen(source)
+                # text = recognizer.recognize_google_cloud(audio, language=lang_code)
                 text = recognizer.recognize_google(audio, language=lang_code)
-                print(text)
+                print("text: ", text)
                 speak(text, lang_code)
                 if condition == None or condition(text):
                     return text
@@ -76,10 +84,12 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
                 print(prompt)
                 print(">>> ", end="", flush=True)
                 speak(prompt, "en")
-
+            except sr.RequestError as e:
+                print(f"Could not request results from Google Cloud Speech service; {e}")
+                # text = recognizer.recognize_google(audio, language=lang_code)
 def get_language():
     language = listen_for_input("Please say a language", "en-US", is_language, language_not_supported_message)
-    return language.capitalize()
+    return language.split()[0].capitalize()
 
 def get_word(language):
     lang_code = gt.LANGCODES[language.lower()]
@@ -89,10 +99,17 @@ def get_word(language):
 
 def ask_for_flashcard():
     wants_to_make_flashcard = listen_for_input("Do you want to make a flashcard?", "en",  is_yes_or_no, yes_or_no_error_message)
-    if wants_to_make_flashcard.lower() == "yes":
+    if wants_to_make_flashcard.split()[0].lower() == "yes":
         return True
     else:
         return False
+    
+def which_image():
+    input_string = listen_for_input("Which image would you like to use?", "en")
+    try:
+        number = w2n.word_to_num(input_string)
+    except ValueError as e:
+        print()
 
 def capture_audio(audio_request_message):
     """Adjusts for background noise, prints audio_request_message that asks the
