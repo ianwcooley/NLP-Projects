@@ -14,9 +14,12 @@ def main():
             wants_to_make_flashcard = speech.ask_for_flashcard()
             if wants_to_make_flashcard:
                 flashcard.get_images(word)
-                pass
+                image_number = speech.get_which_image()
+                flashcard.add_flashcard(image_number, word)
             else:
                 opened_page = False
+
+    #now, ask user which picture he wants to use.
     
 
 

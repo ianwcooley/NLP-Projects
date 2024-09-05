@@ -18,7 +18,11 @@ from google.cloud import speech
 recognizer = sr.Recognizer()
 # recognizer.pause_threshold = 0.5
 
+def is_non_empty_string(variable):
+    return isinstance(variable, str) and len(variable) > 0
 
+def is_empty_string_or_none(value):
+    return value == "" or value is None
 
 def play_audio(file_path):
     """Play audio file using afplay on macOS"""
@@ -27,9 +31,10 @@ def play_audio(file_path):
 def speak(text, lang_code):
     """Makes and plays an audio clip of the text in the given language"""
     # Text-to-speech function
-    tts = gTTS(text=text, lang=lang_code, slow=False)
-    tts.save("output.mp3")
-    play_audio("output.mp3")
+    if is_non_empty_string(text):
+        tts = gTTS(text=text, lang=lang_code, slow=False)
+        tts.save("output.mp3")
+        play_audio("output.mp3")
 
 def is_language(text):
     return text.split()[0].lower() in gt.LANGCODES
@@ -43,7 +48,7 @@ def yes_or_no_error_message(text):
 def language_not_supported_message(text):
     return f"{text} is not a supported language."
 
-def listen_for_input(prompt, lang_code, condition=None, error_message=None):
+def listen_for_input(prompt, lang_code, condition=None, error_message=None, contexts=[]):
     """Prompts the user to say something, and returns
     what the user said as a string.
     
@@ -54,9 +59,10 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
     If condition is not met, prompts user again"""
 
     # with sr.Microphone(sample_rate=48000, chunk_size=512) as source:
-    with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        print(recognizer.energy_threshold)
+    with sr.Microphone(sample_rate=16000) as source:
+        print("Adjusting for ambient noise... Please wait.")
+        recognizer.adjust_for_ambient_noise(source)
+        # print(recognizer.energy_threshold)
         # print and speak prompt
         print(prompt)
         print(">>> ", end="", flush=True)
@@ -64,14 +70,44 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
         while True:
             try:
                 # audio = recognizer.listen(source, timeout=3, phrase_time_limit=3)
-                # listen for user input and discover if reco
+                # listen for user input
                 audio = recognizer.listen(source)
+                
+                ###
+                print("Recording stopped. Processing...")
+                # Convert audio to a format compatible with Google Cloud Speech-to-Text
+                audio_data = audio.get_wav_data()
+                # Initialize the Google Cloud Speech Client
+                client = speech.SpeechClient()
+                # Configure the audio settings with phrase hints
+                audio_google = speech.RecognitionAudio(content=audio_data)
+                config = speech.RecognitionConfig(
+                    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                    sample_rate_hertz=16000,
+                    language_code=lang_code, # "en-US"
+                    speech_contexts=[speech.SpeechContext(phrases=contexts)],  # Add your target keywords here
+                )
+
+                # Call the API
+                response = client.recognize(config=config, audio=audio_google)
+
+                # Process and print the results
+                try:
+                # Attempt to access the desired index
+                    text = response.results[0].alternatives[0].transcript
+                except IndexError:
+                    text = ""
+                # for result in response.results:
+                #     print("Transcript: {}".format(result.alternatives[0].transcript))
+                ###
+                
                 # text = recognizer.recognize_google_cloud(audio, language=lang_code)
-                text = recognizer.recognize_google(audio, language=lang_code)
+                # text = recognizer.recognize_google(audio, language=lang_code)
                 print("text: ", text)
                 speak(text, lang_code)
-                if condition == None or condition(text):
-                    return text
+                if is_non_empty_string(text):    
+                    if condition == None or condition(text):
+                        return text
                 else:
                     if (error_message):
                         print("\n", error_message(text))
@@ -91,7 +127,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None):
                 print(f"Could not request results from Google Cloud Speech service; {e}")
                 
 def get_language():
-    language = listen_for_input("Please say a language", "en-US", is_language, language_not_supported_message)
+    language = listen_for_input("Please say a language", "en-US", is_language, language_not_supported_message, gt.LANGUAGES.values())
     return language.split()[0].capitalize()
 
 def get_word(language):
@@ -101,16 +137,19 @@ def get_word(language):
     return word
 
 def ask_for_flashcard():
-    wants_to_make_flashcard = listen_for_input("Do you want to make a flashcard?", "en",  is_yes_or_no, yes_or_no_error_message)
+    wants_to_make_flashcard = listen_for_input("Do you want to make a flashcard?", "en",  is_yes_or_no, yes_or_no_error_message, ["yes", "no"])
     if wants_to_make_flashcard.split()[0].lower() == "yes":
         return True
     else:
         return False
     
-def which_image():
-    input_string = listen_for_input("Which image would you like to use?", "en")
+def get_which_image():
+    numbers = [str(number) for number in range(20)]
+    input_string = listen_for_input("Which image would you like to use?", "en", None, None, numbers)
     try:
         number = w2n.word_to_num(input_string)
+        print(number)
+        return number
     except ValueError as e:
         print()
 
@@ -120,7 +159,7 @@ def capture_audio(audio_request_message):
     with sr.Microphone(sample_rate=8000) as source:
         print("...")
         recognizer.adjust_for_ambient_noise(source, duration=1)
-        print(audio_request_message)
+        print(audio_request_message) 
         audio = recognizer.listen(source)
         return audio
 
@@ -429,7 +468,7 @@ def record_and_transcribe():
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=16000,
         language_code="en-US",
-        speech_contexts=[speech.SpeechContext(phrases=["yes", "no", "okay", "stop"])],  # Add your target keywords here
+        speech_contexts=[speech.SpeechContext(phrases=["1", "2", "3", "15"])],  # Add your target keywords here
     )
 
     # Call the API
