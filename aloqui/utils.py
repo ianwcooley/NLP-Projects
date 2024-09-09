@@ -8,11 +8,16 @@ def is_non_empty_string(value):
 #     """Check if a variable is an empty string or None."""
 #     return value == "" or value is None
 
-def is_language(text):
-    return text.split()[0].lower() in gt.LANGCODES
+def first_word(text):
+    """Returns the first word in a given string."""
+    return text.split()[0] if text else ''
+
+
+def is_supported_language(text):
+    return first_word(text).lower() in gt.LANGUAGES.values()
 
 def is_yes_or_no(text):
-    return text.split()[0].lower() in ["yes", "no"]
+    return first_word(text).lower() in ["yes", "no"]
 
 def yes_or_no_error_message(text):
     return "Say yes or no."

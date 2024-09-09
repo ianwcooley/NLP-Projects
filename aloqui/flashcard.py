@@ -3,6 +3,7 @@ import requests
 from duckduckgo_search import DDGS
 import json
 import base64
+import threading
 
 def search_duckduckgo_images(keyword):
     """Search for images on DuckDuckGo and return the results."""
@@ -35,15 +36,25 @@ def download_image(url, folder_path, index):
         print(f"Error downloading {url}: {e}")
 
 def get_images(word):
+    """Download images concurrently using threading."""
+    
     images = search_duckduckgo_images(word)
     # Folder to save downloaded images
     folder_path = "images"
     os.makedirs(folder_path, exist_ok=True)
 
-    # Download each image
+    threads = []  # List to keep track of all threads
+
+    # Create and start a thread for each image download
     for index, image in enumerate(images):
         image_url = image['image']
-        download_image(image_url, folder_path, index)
+        thread = threading.Thread(target=download_image, args=(image_url, folder_path, index))
+        threads.append(thread)
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
 
 
 def store_image_in_anki(image_path, image_name):

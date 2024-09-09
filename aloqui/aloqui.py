@@ -5,19 +5,19 @@ import googletrans as gt
 import flashcard
 
 def main():
-    opened_page = False
     language = speech.get_language()
-    while (opened_page == False):
+    page_opened = False
+    while (not page_opened):
         word = speech.get_word(language)
-        opened_page = wiki_parser.open_wikitionary_page(word, language)    
-        if opened_page == True:
+        page_opened = wiki_parser.open_wikitionary_page(word, language)    
+        if page_opened:
             wants_to_make_flashcard = speech.ask_for_flashcard()
             if wants_to_make_flashcard:
                 flashcard.get_images(word)
                 image_number = speech.get_which_image()
                 flashcard.add_flashcard(image_number, word)
             else:
-                opened_page = False
+                page_opened = False
 
     #now, ask user which picture he wants to use.
     

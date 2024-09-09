@@ -7,19 +7,6 @@ import constants
 import pprint
 import speech
 
-# NOTE: This function is not called anywhere.
-def check_and_open_url(url):
-    """Checks to see if url exists, and if so, opens the url in the user's default
-    web browser. If not, prints an error message."""
-    try:
-        # Send a HEAD request to check if the URL exists
-        response = requests.head(url, allow_redirects=True)
-        if response.status_code == 200:
-            webbrowser.open(url)
-        else:
-            print(f"URL does not exist or returned status code: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to reach the URL: {e}")
 
 def open_wikitionary_page(word, language):
     """Checks to see if wiktionary page exists for word in given language.
@@ -41,6 +28,37 @@ def open_wikitionary_page(word, language):
     except requests.exceptions.RequestException as e:
         print(f"Failed to reach the URL: {e}")
         return False
+
+#
+#
+#
+#
+#
+#
+#
+###
+### Unused code
+###
+#
+#
+#
+#
+#
+#
+#
+
+def check_and_open_url(url):
+    """Checks to see if url exists, and if so, opens the url in the user's default
+    web browser. If not, prints an error message."""
+    try:
+        # Send a HEAD request to check if the URL exists
+        response = requests.head(url, allow_redirects=True)
+        if response.status_code == 200:
+            webbrowser.open(url)
+        else:
+            print(f"URL does not exist or returned status code: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to reach the URL: {e}")
 
 def get_soup(url):
     """Checks to see if url exists, and if so, gets the BeautifulSoup of the url.
@@ -136,10 +154,6 @@ def get_plain_text(word, language):
 def get_word_info(word, language):
     get_html(word, language)
     get_plain_text(word, language)
-
-###############
-#########################
-############
 
 class WordEntry:
     def __init__(self, word, language):
