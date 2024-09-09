@@ -1,2 +1,9 @@
+.DS_Store
+__pycache__
+google_credentials.json
+openai-env/
 ignore/
 aloqui/ignore/
+aloqui/images/
+aloqui/output.*
+
