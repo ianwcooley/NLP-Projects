@@ -6,3 +6,5 @@ PARTS_OF_SPEECH = [
     "Diacritical_mark", "Romanization", "Affix", "Classificatory_particle", 
     "Auxiliary_verb", "Copula", "Proper_noun"
 ]
+
+NUMBER_OF_IMAGE_DOWNLOADS = 20

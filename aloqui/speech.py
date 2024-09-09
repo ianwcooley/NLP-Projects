@@ -14,6 +14,7 @@ import pyaudio
 import wave
 from google.cloud import speech
 import utils
+import constants
 
 # Initialize recognizer for speech recognition
 recognizer = sr.Recognizer()
@@ -88,16 +89,20 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                 # text = recognizer.recognize_google(audio, language=lang_code)
                 print("text: ", text)
                 speak(text, lang_code)
+                # import pdb; pdb.set_trace()
                 if utils.is_non_empty_string(text):    
                     if condition == None or condition(text):
                         return text
+                    else:
+                        if (error_message):
+                            print("\n", error_message(text))
+                            speak(error_message(text), "en")
                 else:
-                    if (error_message):
-                        print("\n", error_message(text))
-                        speak(error_message(text), "en")
-                    print(prompt)
-                    print(">>> ", end="", flush=True)
-                    speak(prompt, "en")
+                    print("\nSorry, I did not understand.")
+                    speak("Sorry, I did not understand.", "en")
+                print(prompt)
+                print(">>> ", end="", flush=True)
+                speak(prompt, "en")
             except sr.WaitTimeoutError:
                 print("Timeout: No speech detected within the timeout period.")
             except sr.UnknownValueError:
@@ -128,14 +133,14 @@ def ask_for_flashcard():
         return False
     
 def get_which_image():
-    numbers = [str(number) for number in range(20)]
-    input_string = listen_for_input("Which image would you like to use?", "en", None, None, numbers)
+    numbers = [str(number) for number in range(constants.NUMBER_OF_IMAGE_DOWNLOADS)]
+    user_input = listen_for_input("Which image would you like to use?", "en-US", utils.is_valid_image, utils.invalid_image_error_message, numbers)
     try:
-        number = w2n.word_to_num(input_string)
+        number = w2n.word_to_num(user_input)
         print(number)
         return number
     except ValueError as e:
-        print()
+        print(e)
 
 
 #
