@@ -28,7 +28,7 @@ def invalid_image_error_message(text):
     return f"{text} is not one of the images."
 
 def is_supported_language(text):
-    return first_word(text).lower() in gt.LANGUAGES.values()
+    return first_word(text).lower() in constants.LANGUAGES.values()
 
 def language_not_supported_message(text):
     return f"{text} is not a supported language."

@@ -116,19 +116,19 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                 print(f"Could not request results from Google Cloud Speech service; {e}")
                 
 def get_language():
-    user_input = listen_for_input("Please say a language", "en-US", utils.is_supported_language, utils.language_not_supported_message, gt.LANGUAGES.values())
+    user_input = listen_for_input("Please say a language", "en-US", utils.is_supported_language, utils.language_not_supported_message, constants.LANGUAGES.values())
     language = utils.first_word(user_input).capitalize()
     return language
 
 def get_word(language):
-    lang_code = gt.LANGCODES[language.lower()]
+    lang_code = constants.LANGCODES[language.lower()]
     user_input = listen_for_input("Please say a word", lang_code)
     word = utils.first_word(user_input)
     return word
 
 def ask_for_flashcard():
     wants_to_make_flashcard = listen_for_input("Do you want to make a flashcard?", "en",  utils.is_yes_or_no, utils.yes_or_no_error_message, ["yes", "no"])
-    if wants_to_make_flashcard.split()[0].lower() == "yes":
+    if utils.first_word(wants_to_make_flashcard).lower() == "yes":
         return True
     else:
         return False
@@ -176,7 +176,7 @@ def capture_audio(audio_request_message):
 def convert_audio_to_text(audio, language="english"):
     """Converts a recorded audio message to text. If no language is given,
     defaults to English."""
-    lang_code = gt.LANGCODES[language.lower()]
+    lang_code = constants.LANGCODES[language.lower()]
     try:
         text = recognizer.recognize_google(audio, language=lang_code)
         return text
@@ -192,7 +192,7 @@ def convert_audio_to_text(audio, language="english"):
 #     that language if it is supported."""
 #     audio = capture_audio(f"Say the language you'd like to translate {direction}:")
 #     text = convert_audio_to_text(audio)
-#     if text.lower() in gt.LANGCODES:
+#     if text.lower() in constants.LANGCODES:
 #         language = text.capitalize()
 #         print(f"You are translating {direction}: {text}")
 #         return language
@@ -490,6 +490,7 @@ def record_and_transcribe():
 
 
 def main():
+    ask_for_flashcard()
     # recognize_yes_no()
     # Record audio and transcribe
     # record_audio("output.wav")
