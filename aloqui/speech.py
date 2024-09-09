@@ -70,6 +70,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                     sample_rate_hertz=16000,
                     language_code=lang_code, # "en-US"
                     speech_contexts=[speech.SpeechContext(phrases=contexts)],  # Add your target keywords here
+                    max_alternatives=1 # NOTE: we're telling speech to only look for one word
                 )
 
                 # Call the API
