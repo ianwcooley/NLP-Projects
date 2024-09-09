@@ -4,6 +4,7 @@ import sys
 from bs4 import BeautifulSoup
 from gtts import gTTS
 from pydub import AudioSegment
+from pydub.playback import play
 import os
 import string
 import pprint
@@ -61,6 +62,18 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                 print("Recording stopped. Processing...")
                 # Convert audio to a format compatible with Google Cloud Speech-to-Text
                 audio_data = audio.get_wav_data()
+
+                # Convert the audio_data to an AudioSegment object
+                audio_segment = AudioSegment(
+                    data=audio_data,
+                    sample_width=2,  # Assuming 16-bit audio
+                    frame_rate=16000,  # Assuming a sample rate of 16000 Hz
+                    channels=1  # Assuming mono audio
+                )
+
+                # Play back the audio using pydub
+                play(audio_segment)
+                
                 # Initialize the Google Cloud Speech Client
                 client = speech.SpeechClient()
                 # Configure the audio settings with phrase hints
@@ -69,6 +82,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                     encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                     sample_rate_hertz=16000,
                     language_code=lang_code, # "en-US"
+                    model="command_and_search",
                     speech_contexts=[speech.SpeechContext(phrases=contexts)],  # Add your target keywords here
                     max_alternatives=1 # NOTE: we're telling speech to only look for one word
                 )
@@ -137,7 +151,7 @@ def get_which_image():
     numbers = [str(number) for number in range(constants.NUMBER_OF_IMAGE_DOWNLOADS)]
     user_input = listen_for_input("Which image would you like to use?", "en-US", utils.is_valid_image, utils.invalid_image_error_message, numbers)
     try:
-        number = w2n.word_to_num(user_input)
+        number = w2n.word_to_num(utils.first_word(user_input))
         print(number)
         return number
     except ValueError as e:
