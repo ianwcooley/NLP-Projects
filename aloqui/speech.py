@@ -51,7 +51,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
         # print and speak prompt
         print(prompt)
         print(">>> ", end="", flush=True)
-        speak(prompt, "en")
+        # speak(prompt, "en")
         while True:
             try:
                 # audio = recognizer.listen(source, timeout=3, phrase_time_limit=3)
@@ -72,7 +72,7 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                 )
 
                 # Play back the audio using pydub
-                play(audio_segment)
+                # play(audio_segment)
                 
                 # Initialize the Google Cloud Speech Client
                 client = speech.SpeechClient()
@@ -114,18 +114,18 @@ def listen_for_input(prompt, lang_code, condition=None, error_message=None, cont
                             speak(error_message(text), "en")
                 else:
                     print("\nSorry, I did not understand.")
-                    speak("Sorry, I did not understand.", "en")
+                    # speak("Sorry, I did not understand.", "en")
                 print(prompt)
                 print(">>> ", end="", flush=True)
-                speak(prompt, "en")
+                # speak(prompt, "en")
             except sr.WaitTimeoutError:
                 print("Timeout: No speech detected within the timeout period.")
             except sr.UnknownValueError:
                 print("\nSorry, I did not understand.")
-                speak("Sorry, I did not understand.", "en")
+                # speak("Sorry, I did not understand.", "en")
                 print(prompt)
                 print(">>> ", end="", flush=True)
-                speak(prompt, "en")
+                # speak(prompt, "en")
             except sr.RequestError as e:
                 print(f"Could not request results from Google Cloud Speech service; {e}")
                 

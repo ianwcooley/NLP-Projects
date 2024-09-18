@@ -88,7 +88,7 @@ def store_image_in_anki(image_path, image_name):
     # Parse and return the response
     return json.loads(response.text)
 
-def add_card_with_image(deck_name, front, back, image_name, tags=None):
+def add_card_with_image(deck_name, text, image_name, image_side, tags=None):
     """
     Adds a new card with an image to an Anki deck.
 
@@ -117,8 +117,8 @@ def add_card_with_image(deck_name, front, back, image_name, tags=None):
                 "deckName": deck_name,
                 "modelName": "Basic",
                 "fields": {
-                    "Front": front,
-                    "Back": f"{image_tag}"
+                    "Front": text if image_side == "back" else f"{image_tag}",
+                    "Back": f"{image_tag}" if image_side == "back" else text
                 },
                 "tags": tags or [],
                 "options": {
@@ -134,14 +134,17 @@ def add_card_with_image(deck_name, front, back, image_name, tags=None):
     # Parse and return the response
     return json.loads(response.text)
 
-def add_flashcard(image_number, word):
+def add_flashcard(image_number, word, language):
     image_name = f"image_{str(image_number)}.jpg"
-    store_response = store_image_in_anki(f"images/{image_name}", image_name)
+    anki_image_name = f"{word}_{language}"
+    store_response = store_image_in_anki(f"images/{image_name}", anki_image_name)
     print("Image Store Response:", store_response)
 
-    # Step 2: Add the card with the image
-    add_card_response = add_card_with_image("Test", word, word, image_name, ["sample", "image"])
-    print("Add Card Response:", add_card_response)
+    # Step 2: Add the cards with the image on one side, text on the other (both directions)
+    add_card_response_1 = add_card_with_image("Spanish-New", word, anki_image_name, "front", ["sample", "image"])
+    print("Add Card Response:", add_card_response_1)
+    add_card_response_2 = add_card_with_image("Spanish-New", word, anki_image_name, "back", ["sample", "image"])
+    print("Add Card Response:", add_card_response_2)
 
 # # Example usage
 # deck_name = "Test"  # Replace with your deck name

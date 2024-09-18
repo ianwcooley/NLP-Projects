@@ -15,9 +15,10 @@ def main():
             if wants_to_make_flashcard:
                 flashcard.get_images(word)
                 image_number = speech.get_which_image()
-                flashcard.add_flashcard(image_number, word)
-            else:
-                page_opened = False
+                flashcard.add_flashcard(image_number, word, language)
+            page_opened = False
+            # else:
+            #     page_opened = False
 
     #now, ask user which picture he wants to use.
     
